@@ -1,0 +1,4 @@
+Write a program code in the ST language for a PLC according to the IEC/EN 61131 standard, which controls a linear pneumatic actuator operated by a monostable valve using a single button according to the following rules:
+
+If the actuator is in the initial position detected by sensor A0 and the Motor_A_Button is activated, the actuator extends, which is detected by sensor A1.
+If the actuator is in the extended position detected by sensor A1 and the Motor_A_Button is activated, the actuator returns to the initial position, which is detected by sensor A0.
