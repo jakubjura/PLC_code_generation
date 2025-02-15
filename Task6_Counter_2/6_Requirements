@@ -1,0 +1,12 @@
+Write a program code in the ST language for a PLC according to the IEC/EN 61131 standard, which counts the number of products (ProductCount) on a conveyor:
+
+If the sensor (EntrySensor) detects a product, the ProductCount value increases by 1.
+If the ExitSensor detects a product leaving, the ProductCount value decreases by 1.
+The output ConveyorFull is activated when ProductCount reaches 50.
+
+
+
+
+
+
+

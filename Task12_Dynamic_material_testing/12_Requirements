@@ -1,0 +1,16 @@
+Create a program for an automatic dynamic material testing system.
+
+The dynamic loading is ensured by a linear pneumatic actuator. The actuator is equipped with end sensors and a suitable valve.
+
+The actuator applies force to the component for 350 ms.
+After that, it relieves the load for 600 ms.
+If the component fails, the actuator moves to the end position, which is detected by a sensor, thus indicating the component's failure.
+The control system continuously records the number of load cycles, and upon detecting a component failure, it saves the value to memory and stops the periodic activation of the actuator.
+
+
+
+
+
+
+
+

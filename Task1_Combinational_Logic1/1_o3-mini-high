@@ -1,0 +1,15 @@
+PROGRAM AtLeastTwoTrue
+VAR_INPUT
+    X1 : BOOL;
+    X2 : BOOL;
+    X3 : BOOL;
+END_VAR
+VAR_OUTPUT
+    Y : BOOL;
+END_VAR
+
+BEGIN
+    Y := (X1 AND X2) OR (X1 AND X3) OR (X2 AND X3);
+END_PROGRAM
+
+

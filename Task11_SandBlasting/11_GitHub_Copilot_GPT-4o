@@ -1,0 +1,57 @@
+PROGRAM Sandblasting
+VAR
+    (* Inputs *)
+    START_BUTTON : BOOL;  // Tlačítko START
+    (* Outputs *)
+    CLAMP_A : BOOL;  // Pneumotor A - upnutí obrobku
+    TRIGGER_B : BOOL;  // Pneumotor B - ventil pískovací trysky
+    MOVE_C : BOOL;  // Pneumotor C - posun trysky
+    (* Internal Variables *)
+    state : INT := 0;  // Stavový automat
+    timer : TON;  // Časovač
+    Ta : TIME := T#5s;  // Doba pískování (lze změnit operátorem)
+END_VAR
+
+(* Hlavní program *)
+CASE state OF
+    0:  // Počáteční stav, čekání na stisk tlačítka START
+        IF START_BUTTON THEN
+            CLAMP_A := TRUE;  // Upnutí obrobku
+            state := 1;
+        END_IF;
+    1:  // Upnutí obrobku a spuštění pískování prvního ramene
+        IF NOT START_BUTTON THEN  // Zajištění, že tlačítko START bylo uvolněno
+            timer(IN := TRUE, PT := Ta);
+            IF timer.Q THEN
+                timer(IN := FALSE);
+                TRIGGER_B := FALSE;  // Uzavření ventilu trysky
+                state := 2;
+            ELSE
+                TRIGGER_B := TRUE;  // Otevření ventilu trysky
+            END_IF;
+        END_IF;
+    2:  // Přesun trysky ke druhému rameni
+        MOVE_C := TRUE;
+        state := 3;
+    3:  // Čekání na dosažení polohy druhého ramene
+        IF NOT MOVE_C THEN
+            timer(IN := TRUE, PT := Ta);
+            state := 4;
+        END_IF;
+    4:  // Spuštění pískování druhého ramene
+        IF timer.Q THEN
+            timer(IN := FALSE);
+            TRIGGER_B := FALSE;  // Uzavření ventilu trysky
+            state := 5;
+        ELSE
+            TRIGGER_B := TRUE;  // Otevření ventilu trysky
+        END_IF;
+    5:  // Návrat trysky do výchozí polohy
+        MOVE_C := FALSE;
+        state := 6;
+    6:  // Uvolnění obrobku
+        CLAMP_A := FALSE;
+        state := 0;  // Návrat do počátečního stavu
+END_CASE;
+END_PROGRAM
+

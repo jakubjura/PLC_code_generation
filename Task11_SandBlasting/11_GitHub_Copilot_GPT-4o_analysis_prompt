@@ -1,0 +1,56 @@
+PROGRAM AbrasiveBlasting
+VAR
+    Ta: TIME; // Adjustable duration for blasting
+    StartButton: BOOL; // START button input
+    Clamp: BOOL; // Pneumotor A output
+    NozzleValve: BOOL; // Pneumotor B output
+    MoveNozzle: BOOL; // Pneumotor C output
+    State: INT := 0; // State machine variable
+    Timer: TON; // Timer for blasting duration
+    TimerEnable: BOOL; // Variable to enable timer
+END_VAR
+
+// State machine implementation
+CASE State OF
+    0: // Idle state, waiting for START button press
+        IF StartButton THEN
+            Clamp := TRUE; // Clamp the workpiece
+            State := 1; // Move to next state
+        END_IF
+        
+    1: // Start blasting first arm
+        TimerEnable := TRUE; // Enable timer
+        NozzleValve := TRUE; // Open nozzle valve
+        IF Timer.Q THEN
+            TimerEnable := FALSE; // Disable timer
+            NozzleValve := FALSE; // Close nozzle valve
+            State := 2; // Move to next state
+        END_IF
+        
+    2: // Move nozzle to second arm
+        MoveNozzle := TRUE; // Move nozzle
+        State := 3; // Move to next state
+        
+    3: // Start blasting second arm
+        TimerEnable := TRUE; // Enable timer
+        NozzleValve := TRUE; // Open nozzle valve
+        IF Timer.Q THEN
+            TimerEnable := FALSE; // Disable timer
+            NozzleValve := FALSE; // Close nozzle valve
+            MoveNozzle := FALSE; // Stop nozzle movement
+            State := 4; // Move to next state
+        END_IF
+        
+    4: // Return nozzle to initial position
+        State := 5; // Move to next state
+        
+    5: // Release workpiece
+        Clamp := FALSE; // Release clamp
+        State := 0; // Return to idle state
+    ELSE
+        State := 0; // Default to idle state
+END_CASE;
+// Timer logic
+Timer(IN := TimerEnable, PT := Ta); // Start timer with preset time Ta
+END_PROGRAM
+

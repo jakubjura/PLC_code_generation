@@ -1,0 +1,40 @@
+PROGRAM ProductCounter
+VAR
+    // Vstupy ze senzorů
+    EntrySensor : BOOL;   // Senzor detekující příchod výrobku
+    ExitSensor  : BOOL;   // Senzor detekující odchod výrobku
+
+    // Výstupy
+    ProductCount : INT;   // Počet výrobků na dopravníku
+    ConveyorFull : BOOL;  // Indikace, že dopravník je plný
+
+    // Funkční bloky pro detekci vzestupného hranu
+    EntryEdge : R_TRIG;   // Detekce vzestupného hranu u EntrySensor
+    ExitEdge  : R_TRIG;   // Detekce vzestupného hranu u ExitSensor
+
+    // Funkční blok čítače (up/down counter)
+    Counter : CTUD;       // Standardní čítač – inkrementace a dekrementace
+END_VAR
+
+// --- Detekce vzestupného hranu senzorů ---
+// Volání funkčních bloků R_TRIG pro získání pulzů při změně ze FALSE na TRUE
+EntryEdge(CLK := EntrySensor);
+ExitEdge(CLK  := ExitSensor);
+
+// --- Nastavení vstupů funkčního bloku čítače ---
+// CU: inkrementace, CD: dekrementace, R: reset (není použit), PV: přednastavená hodnota
+Counter.CU := EntryEdge.Q;
+Counter.CD := ExitEdge.Q;
+Counter.R  := FALSE;    // Reset není využit – případně lze implementovat podmínku pro vynulování
+Counter.PV := 50;       // Při dosažení nebo překročení této hodnoty bude výstup Q aktivní
+
+// Vyvolání funkčního bloku čítače – aktualizace interních proměnných
+Counter();
+
+// --- Aktualizace sledovaných proměnných ---
+// Aktuální počet výrobků získáme z výstupu CV funkčního bloku čítače
+ProductCount := Counter.CV;
+
+// Výstup ConveyorFull se aktivuje, pokud čítač dosáhne přednastavené hodnoty (PV)
+ConveyorFull := Counter.Q;
+

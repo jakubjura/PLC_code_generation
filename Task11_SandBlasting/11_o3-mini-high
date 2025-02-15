@@ -1,0 +1,86 @@
+PROGRAM Opiskovani
+// Řídicí program pro přípravek opískování odlitku
+
+VAR
+    // Stavový automat:
+// 0 – Idle
+// 1 – Upnutí odlitku (pneumotor A)
+// 2 – První opískování
+// 3 – Přesun trysky ke druhému ramenu
+// 4 – Druhé opískování
+// 5 – Návrat trysky
+// 6 – Uvolnění odlitku
+// 7 – Konec cyklu
+    state : INT := 0;
+    
+    // Vstupní proměnná – tlačítko START (TRUE = stisknuto)
+    start : BOOL;
+    
+    // Výstupní proměnné pro ovládání pneumatických členů
+    clampa : BOOL := FALSE;   // Pneumotor A – upnutí odlitku
+    valveB : BOOL := FALSE;   // Pneumotor B – ventil pískovací trysky
+    moveC  : BOOL := FALSE;   // Pneumotor C – pohyb trysky
+    
+    // Doba opískování, nastavena operátorem (např. přes PC/klávesnici)
+    tOp : TIME := T#5s;
+    
+    // Časovač pro opískovací cyklus (TON – časovač On-Delay)
+    timerOp : TON;
+END_VAR
+
+// Hlavní cyklus řízení úlohy
+CASE state OF
+    0: // Idle: čekáme na stisk tlačítka START
+        IF start THEN
+            state := 1;
+        END_IF;
+        
+    1: // Upnutí odlitku: aktivace pneumotoru A
+        clampa := TRUE;
+        // Případně lze doplnit prodlevu pro jistotu upnutí
+        state := 2;
+        
+    2: // První opískování: otevření ventilu trysky (pneumotor B)
+        valveB := TRUE;
+        // Spuštění časovače s dobou tOp
+        timerOp(IN := TRUE, PT := tOp);
+        IF timerOp.Q THEN
+            // Doba opískování uplynula
+            valveB := FALSE;
+            timerOp(IN := FALSE); // Reset časovače
+            state := 3;
+        END_IF;
+        
+    3: // Přesun trysky ke druhému ramenu: aktivace pneumotoru C
+        moveC := TRUE;
+        // Pokud je k dispozici senzor polohy, lze zde čekat na potvrzení dosažení druhého ramena.
+        // V tomto příkladu předpokládáme okamžitý přesun.
+        state := 4;
+        
+    4: // Druhé opískování: opět otevření ventilu trysky (pneumotor B)
+        valveB := TRUE;
+        timerOp(IN := TRUE, PT := tOp);
+        IF timerOp.Q THEN
+            valveB := FALSE;
+            timerOp(IN := FALSE);
+            state := 5;
+        END_IF;
+        
+    5: // Návrat trysky do výchozí polohy: deaktivace pneumotoru C
+        moveC := FALSE;
+        state := 6;
+        
+    6: // Uvolnění odlitku: deaktivace pneumotoru A
+        clampa := FALSE;
+        state := 7;
+        
+    7: // Konec cyklu: čekáme, dokud nebude odlit ručně vyjmut, poté resetujeme stav na Idle
+        // V případě, že je k dispozici senzor odlitku, lze zde kontrolovat jeho přítomnost.
+        // V tomto příkladu přecházíme ihned do stavu 0.
+        state := 0;
+        
+    ELSE
+        state := 0;
+END_CASE;
+END_PROGRAM
+

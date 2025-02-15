@@ -1,0 +1,34 @@
+PROGRAM ProductCounter
+    VAR
+        EntrySensor : BOOL; (* Senzor na vstupu dopravníku *)
+        ExitSensor : BOOL;  (* Senzor na výstupu dopravníku *)
+        ProductCount : INT := 0; (* Počet výrobků na dopravníku *)
+        ConveyorFull : BOOL := FALSE; (* Indikace plného dopravníku *)
+        MaxCapacity : INT := 50; (* Maximální kapacita dopravníku *)
+    END_VAR
+
+    (* Zvýšení počtu výrobků při detekci nového výrobku *)
+    IF EntrySensor THEN
+        ProductCount := ProductCount + 1;
+    END_IF;
+    
+    (* Snížení počtu výrobků při odchodu výrobku *)
+    IF ExitSensor THEN
+        ProductCount := ProductCount - 1;
+    END_IF;
+    
+    (* Zajištění, že počet výrobků neklesne pod nulu *)
+    IF ProductCount < 0 THEN
+        ProductCount := 0;
+    END_IF;
+    
+    (* Aktivace signálu plného dopravníku při dosažení limitu *)
+    IF ProductCount >= MaxCapacity THEN
+        ConveyorFull := TRUE;
+    ELSE
+        ConveyorFull := FALSE;
+    END_IF;
+
+END_PROGRAM
+
+

@@ -1,0 +1,72 @@
+VAR
+    // Vstupy
+    START_BUTTON : BOOL; // Tlačítko START
+
+    // Výstupy
+    Pneumotor_A : BOOL; // Upnutí odlitku
+    Pneumotor_B : BOOL; // Ventil pískovací trysky
+    Pneumotor_C : BOOL; // Přesun trysky
+
+    // Časovače
+    TIMER_Ta : TON; // Čas opískování
+
+    // Pomocné proměnné
+    State : INT := 0; // Stavový automat
+    Param_Ta : TIME := T#5S; // Nastavitelný čas opískování, výchozí hodnota 5s
+END_VAR
+PROGRAM Opiskovani_Odlitku
+VAR
+    // Vstupy
+    START_BUTTON : BOOL; // Tlačítko START
+    
+    // Výstupy
+    Pneumotor_A : BOOL; // Upnutí odlitku
+    Pneumotor_B : BOOL; // Ventil pískovací trysky
+    Pneumotor_C : BOOL; // Přesun trysky
+    
+    // Časovače
+    TIMER_Ta : TON; // Čas opískování
+    
+    // Pomocné proměnné
+    State : INT := 0; // Stavový automat
+    Param_Ta : TIME := T#5S; // Nastavitelný čas opískování, výchozí hodnota 5s
+END_VAR
+
+// Stavový automat
+CASE State OF
+    0: // Čekání na start
+        IF START_BUTTON THEN
+            Pneumotor_A := TRUE; // Upnutí odlitku
+            State := 1;
+        END_IF
+    
+    1: // Zahájení pískování prvního ramene
+        Pneumotor_B := TRUE; // Otevření ventilu trysky
+        TIMER_Ta(IN := TRUE, PT := Param_Ta);
+        IF TIMER_Ta.Q THEN
+            Pneumotor_B := FALSE; // Uzavření ventilu trysky
+            State := 2;
+        END_IF
+    
+    2: // Přesun trysky k druhému rameni
+        Pneumotor_C := TRUE;
+        State := 3;
+    
+    3: // Pískování druhého ramene
+        Pneumotor_B := TRUE;
+        TIMER_Ta(IN := TRUE, PT := Param_Ta);
+        IF TIMER_Ta.Q THEN
+            Pneumotor_B := FALSE;
+            State := 4;
+        END_IF
+    
+    4: // Návrat trysky do výchozí polohy
+        Pneumotor_C := FALSE;
+        State := 5;
+    
+    5: // Uvolnění odlitku
+        Pneumotor_A := FALSE;
+        State := 0; // Návrat na začátek
+END_CASE;
+END_PROGRAM
+

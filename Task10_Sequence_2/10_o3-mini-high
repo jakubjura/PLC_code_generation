@@ -1,0 +1,120 @@
+(*
+  Program: Přejezdu zabezpečovací zařízení
+  Popis: Řízení signalizace přejezdu – tři stavy:
+         - csMimoProvoz: mimo provoz (ani jeden vstup aktivní či OFF nebo žádný vstup)
+         - csStuj:   signalizace STOP (strojním zabezpečením ze stanice)
+         - csVolno:  signalizace OPEN (svoboda jízdy)
+         
+  V režimu csStuj: střídavě blikají červená světla R1 a R2 každých 550 ms.
+  V režimu csVolno: bliká bílé světlo W – perioda 850 ms, s 70 % dobou sepnutí.
+  V režimu csMimoProvoz: žádné světlo nezasvítí.
+*)
+
+(* Definice datového typu pro stavy přejezdu *)
+TYPE CrossingState : (csMimoProvoz, csStuj, csVolno);
+END_TYPE
+
+(* Globální proměnné programu *)
+VAR
+    (* Vstupní signály ze staničního zabezpečovacího systému *)
+    OPEN  : BOOL;   (* aktivuje stav VOLNO *)
+    STOP  : BOOL;   (* aktivuje stav STŮJ *)
+    OFF   : BOOL;   (* aktivuje stav MIMO PROVOZ, nebo když není žádný vstup *)
+    
+    (* Výstupní signály ovládající svítivost světel *)
+    R1    : BOOL;   (* červené světlo 1 *)
+    R2    : BOOL;   (* červené světlo 2 *)
+    W     : BOOL;   (* bílé světlo *)
+    
+    (* Interní proměnné pro stavový automat *)
+    current_state : CrossingState := csMimoProvoz;
+    
+    (* Proměnné pro řízení blikání – využíváme funkční bloky TON *)
+    timerStuj   : TON;    (* časovač pro periodu 550 ms v režimu STŮJ *)
+    timerVolno  : TON;    (* časovač pro periodu 850 ms v režimu VOLNO *)
+    
+    (* Interní pomocná proměnná pro střídání červených světel *)
+    toggleRed   : BOOL := FALSE;
+    
+    (* Konstanty – časy blikání *)
+    T_Stuj     : TIME := T#550ms;    (* perioda pro červená světla *)
+    T_Volno    : TIME := T#850ms;    (* perioda pro bílé světlo *)
+    T_Volno_On : TIME := T#595ms;    (* doba zapnutí bílého světla = 70 % z 850 ms *)
+END_VAR
+
+(* ***************************** *)
+(* 1. Výběr aktuálního režimu  *)
+(* ***************************** *)
+(* Priority: OFF (nebo absence vstupů) > STOP > OPEN *)
+IF OFF THEN
+    current_state := csMimoProvoz;
+ELSIF STOP THEN
+    current_state := csStuj;
+ELSIF OPEN THEN
+    current_state := csVolno;
+ELSE
+    (* Pokud nejsou žádné signály, uvádíme do režimu mimo provoz *)
+    current_state := csMimoProvoz;
+END_IF;
+
+(* ***************************** *)
+(* 2. Řízení světel dle stavu  *)
+(* ***************************** *)
+CASE current_state OF
+
+    (* Režim MIMO PROVOZ: žádné světlo nesvítí *)
+    csMimoProvoz:
+        R1 := FALSE;
+        R2 := FALSE;
+        W  := FALSE;
+        (* V případě přechodu do mimo provoz resetujeme časovače a vnitřní proměnné *)
+        timerStuj(IN := FALSE);
+        timerVolno(IN := FALSE);
+        toggleRed := FALSE;
+        
+    (* Režim STŮJ: střídavé blikání červených světel s periodou 550 ms *)
+    csStuj:
+        (* V režimu stůj se bílé světlo nevyskytuje *)
+        W := FALSE;
+        timerVolno(IN := FALSE);   (* případný běh volno-timera ukončíme *)
+        
+        (* Spustíme časovač pro červená světla *)
+        timerStuj(IN := TRUE, PT := T_Stuj);
+        IF timerStuj.Q THEN
+            (* Po uplynutí 550 ms se přepne stav – střídáme, které světlo svítí *)
+            toggleRed := NOT toggleRed;
+            timerStuj(IN := FALSE);  (* reset časovače, aby se znovu spustil v dalším cyklu *)
+        END_IF;
+        (* Výstupy: vždy jedno z červených světel je svícené *)
+        IF toggleRed THEN
+            R1 := TRUE;
+            R2 := FALSE;
+        ELSE
+            R1 := FALSE;
+            R2 := TRUE;
+        END_IF;
+        
+    (* Režim VOLNO: blikání bílého světla s periodou 850 ms a 70% dobou sepnutí *)
+    csVolno:
+        (* V režimu volno se červená světla nevyskytují *)
+        R1 := FALSE;
+        R2 := FALSE;
+        timerStuj(IN := FALSE);  (* ukončíme případný běh stůj-timera *)
+        
+        (* Spustíme časovač pro bílé světlo *)
+        timerVolno(IN := TRUE, PT := T_Volno);
+        (* Podle uplynutého času určujeme, zda má být bílé světlo zapnuto či vypnuto.
+           Pokud od spuštění timeru uplynulo méně než T_Volno_On (cca 595 ms), svítí. *)
+        IF timerVolno.ET < T_Volno_On THEN
+            W := TRUE;
+        ELSE
+            W := FALSE;
+        END_IF;
+        IF timerVolno.Q THEN
+            (* Po skončení periody 850 ms resetujeme timer – opětovné spouštění se provede příštím cyklem *)
+            timerVolno(IN := FALSE);
+        END_IF;
+        
+END_CASE;
+END_PROGRAM
+

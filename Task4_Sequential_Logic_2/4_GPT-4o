@@ -1,0 +1,28 @@
+PROGRAM Pneumotor_Control
+    VAR
+        Motor_A_Button : BOOL;      (* Tlačítko pro ovládání motoru *)
+        Sensor_A0 : BOOL;           (* Senzor iniciální polohy *)
+        Sensor_A1 : BOOL;           (* Senzor vysunuté polohy *)
+        Motor_A_Actuator : BOOL;    (* Výstup pro ovládání motoru *)
+        Prev_Button_State : BOOL := FALSE; (* Paměť předchozího stavu tlačítka *)
+        Motor_State : BOOL := FALSE; (* Stav motoru: FALSE = zasunutý, TRUE = vysunutý *)
+    END_VAR
+
+    (* Detekce náběžné hrany tlačítka *)
+    IF Motor_A_Button AND NOT Prev_Button_State THEN
+        (* Přepnutí stavu motoru *)
+        IF Sensor_A0 THEN
+            Motor_State := TRUE;  (* Motor vyjede *)
+        ELSIF Sensor_A1 THEN
+            Motor_State := FALSE; (* Motor se vrátí *)
+        END_IF;
+    END_IF;
+    
+    (* Aktualizace výstupu podle stavu motoru *)
+    Motor_A_Actuator := Motor_State;
+    
+    (* Uložení aktuálního stavu tlačítka pro detekci náběžné hrany *)
+    Prev_Button_State := Motor_A_Button;
+END_PROGRAM
+
+

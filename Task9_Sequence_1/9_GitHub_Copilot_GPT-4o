@@ -1,0 +1,67 @@
+PROGRAM ConveyorControl
+VAR
+    btnStart : BOOL;           // Tlačítko Start
+    btnStop : BOOL;            // Tlačítko Stop
+    presenceSensor : BOOL;     // Senzor přítomnosti
+    timerLoading : TON;        // Časovač pro Loading (nakládání)
+    timerTransporting : TON;   // Časovač pro Transporting (přeprava)
+    state : INT := 0;          // Stavový automat
+END_VAR
+
+// Definice stavů
+CONST
+    STATE_LOADING : INT := 0;
+    STATE_TRANSPORTING : INT := 1;
+    STATE_UNLOADING : INT := 2;
+END_CONST
+
+// Inicializace časovačů
+timerLoading(IN := FALSE, PT := T#10s);
+timerTransporting(IN := FALSE, PT := T#10s);
+
+CASE state OF
+    STATE_LOADING:
+        // Aktivace fáze Loading (nakládání)
+        IF btnStart THEN
+            timerLoading.IN := TRUE;
+        ELSE
+            timerLoading.IN := FALSE;
+        END_IF
+
+        // Přechod do fáze Transporting (přeprava) po 10 sekundách
+        IF timerLoading.Q THEN
+            timerLoading.IN := FALSE;
+            state := STATE_TRANSPORTING;
+        END_IF
+
+    STATE_TRANSPORTING:
+        // Aktivace fáze Transporting (přeprava)
+        timerTransporting.IN := TRUE;
+
+        // Přechod do fáze Unloading (vykládání) po 10 sekundách
+        IF timerTransporting.Q THEN
+            timerTransporting.IN := FALSE;
+            state := STATE_UNLOADING;
+        END_IF
+
+    STATE_UNLOADING:
+        // Aktivace fáze Unloading (vykládání)
+        IF presenceSensor THEN
+            // Návrat do fáze Loading (nakládání) po dokončení vykládání
+            state := STATE_LOADING;
+        END_IF
+
+    ELSE
+        // Výchozí stav
+        state := STATE_LOADING;
+END_CASE
+
+// Zastavení sekvence po stisknutí tlačítka Stop
+IF btnStop THEN
+    timerLoading.IN := FALSE;
+    timerTransporting.IN := FALSE;
+    state := STATE_LOADING;
+END_IF
+
+END_PROGRAM
+

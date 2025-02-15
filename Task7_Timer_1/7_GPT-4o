@@ -1,0 +1,15 @@
+PROGRAM FanControl
+VAR
+    PowerButton : BOOL;   (* Vstupní proměnná - tlačítko *)
+    Fan         : BOOL;   (* Výstupní proměnná - ventilátor *)
+    Timer       : TON;    (* Časovač typu TON pro zpožděné vypnutí *)
+END_VAR
+
+(* Nastavení časového zpoždění na 10 sekund *)
+Timer(IN := PowerButton, PT := T#10S);
+
+(* Logika řízení ventilátoru *)
+Fan := PowerButton OR Timer.Q;
+END_PROGRAM
+
+

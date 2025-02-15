@@ -1,0 +1,53 @@
+PROGRAM DynamicTestSystem
+VAR
+    Motor_Start : BOOL := FALSE;  // Spuštění pneumatického motoru
+    Motor_Stop : BOOL := FALSE;   // Zastavení pneumatického motoru
+    End_Sensor : BOOL;            // Senzor koncové polohy
+    Cycle_Count : INT := 0;       // Počet cyklů zatížení
+    Test_Finished : BOOL := FALSE;// Indikace dokončení testu
+    Timer_Power : TON;            // Časovač pro měření doby působení
+    Timer_Relief : TON;           // Časovač pro měření doby odlehčení
+    Start_Button : BOOL;          // Tlačítko pro spuštění testování
+    Stop_Button : BOOL;           // Tlačítko pro zastavení testování
+END_VAR
+
+// Spuštění testování
+IF Start_Button THEN
+    Test_Finished := FALSE;
+    Cycle_Count := 0; // Resetování počtu cyklů při spuštění nového testování
+END_IF;
+
+// Zastavení testování
+IF Stop_Button THEN
+    Test_Finished := TRUE;
+END_IF;
+
+// Začátek cyklu
+IF NOT Test_Finished THEN
+    Motor_Start := TRUE;
+    Timer_Power(IN := TRUE, PT := T#350ms);
+    IF Timer_Power.Q THEN
+        Motor_Start := FALSE;
+        Motor_Stop := TRUE;
+        Timer_Relief(IN := TRUE, PT := T#600ms);
+        IF Timer_Relief.Q THEN
+            Motor_Stop := FALSE;
+            Cycle_Count := Cycle_Count + 1;
+        END_IF;
+    END_IF;
+END_IF;
+
+// Kontrola porušení
+IF End_Sensor THEN
+    Test_Finished := TRUE;
+    // Uložení počtu cyklů do paměti (např. EEPROM)
+    // EEPROM_WRITE(Cycle_Count);
+END_IF;
+
+// Zastavení periodického spouštění motoru
+IF Test_Finished THEN
+    Motor_Start := FALSE;
+    Motor_Stop := FALSE;
+END_IF;
+END_PROGRAM
+

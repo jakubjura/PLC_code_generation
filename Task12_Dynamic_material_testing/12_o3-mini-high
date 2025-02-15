@@ -1,0 +1,84 @@
+// Konstanty definující stavy testovacího cyklu
+CONSTANT
+    STATE_IDLE        : INT := 0; // Stav: Idle
+    STATE_LOADING     : INT := 1; // Stav: Loading
+    STATE_RELAXATION  : INT := 2; // Stav: Relaxation
+    STATE_FAULT       : INT := 3; // Stav: Fault
+END_CONSTANT
+
+PROGRAM MaterialTest
+VAR
+    TestState          : INT := STATE_IDLE;     // Aktuální stav, inicializován na Idle
+    CycleCounter       : INT := 0;              // Počítadlo cyklů zatížení
+    SavedCycleCounter  : INT := 0;              // Uložený počet cyklů při poruše (0 = zatím neuloženo)
+    Q_Actuator         : BOOL := FALSE;         // Výstup: řízení ventilu pneumotoru
+    I_LimitEnd         : BOOL;                  // Vstup: snímač koncové polohy (indikace porušení součástky)
+    TimerLoad          : TON;                   // Časovač pro fázi zatížení (350 ms)
+    TimerRelax         : TON;                   // Časovač pro fázi odlehčení (600 ms)
+    I_StartTest        : BOOL;                  // Vstup: tlačítko pro spuštění testu
+    I_StopTest         : BOOL;                  // Vstup: tlačítko pro zastavení testu
+    I_ResetFault       : BOOL;                  // Vstup: tlačítko pro reset poruchy
+    TestEnabled        : BOOL := FALSE;         // Příznak povolení testu
+END_VAR
+
+// Pokud je stisknuto tlačítko spuštění, povol testování
+IF I_StartTest THEN
+    TestEnabled := TRUE; // Aktivace testu
+END_IF;
+
+// Pokud je stisknuto tlačítko zastavení, zakáž testování
+IF I_StopTest THEN
+    TestEnabled := FALSE; // Deaktivace testu
+END_IF;
+
+// Nechť aktivita snímače koncové polohy okamžitě přepne stav do Fault
+IF I_LimitEnd THEN
+    TestState := STATE_FAULT; // Přechod do stavu Fault
+END_IF;
+// Řízení stavu Fault se provádí zvlášť, aby byl umožněn přechod (reset) z tohoto stavu
+IF TestState = STATE_FAULT THEN
+    Q_Actuator := FALSE;            // V chybovém stavu je aktuátor vypnutý
+    IF SavedCycleCounter = 0 THEN
+        SavedCycleCounter := CycleCounter; // Uložení počtu cyklů při prvním vstupu do Fault
+    END_IF;
+    TimerLoad(IN := FALSE);         // Zastavení časovače zatížení
+    TimerRelax(IN := FALSE);        // Zastavení časovače odlehčení
+    // Pokud je stisknuto tlačítko resetu poruchy, přejdi do Idle, resetuj počítadlo a deaktivuj test
+    IF I_ResetFault THEN
+        TestState := STATE_IDLE;    // Přechod z Fault do Idle
+        CycleCounter := 0;          // (Volitelně) reset počítadla cyklů
+        TestEnabled := FALSE;       // Test zůstane deaktivován, dokud nebude znovu spuštěn
+    END_IF;
+ELSE
+    // Pokud test není povolen, resetuj stav do Idle
+    IF NOT TestEnabled THEN
+        TestState := STATE_IDLE;    // Reset stavu na Idle
+        Q_Actuator := FALSE;        // Vypnutí aktuátoru
+        TimerLoad(IN := FALSE);     // Zastavení časovače zatížení
+        TimerRelax(IN := FALSE);    // Zastavení časovače odlehčení
+    ELSE
+        // Stavový automat pro aktivní testování
+        CASE TestState OF
+            STATE_IDLE:
+                Q_Actuator := FALSE;         // V Idle je aktuátor vypnutý
+                TestState := STATE_LOADING;  // Automatické zahájení nového cyklu
+            STATE_LOADING:
+                Q_Actuator := TRUE;                      // Aktivace aktuátoru pro zatížení
+                TimerLoad(IN := TRUE, PT := T#350ms);      // Spuštění časovače pro 350 ms
+                IF TimerLoad.Q THEN
+                    TimerLoad(IN := FALSE);              // Reset časovače
+                    CycleCounter := CycleCounter + 1;      // Inkrementace počítadla cyklů
+                    TestState := STATE_RELAXATION;         // Přechod do fáze odlehčení
+                END_IF;
+            STATE_RELAXATION:
+                Q_Actuator := FALSE;                      // Deaktivace aktuátoru během odlehčení
+                TimerRelax(IN := TRUE, PT := T#600ms);     // Spuštění časovače pro 600 ms
+                IF TimerRelax.Q THEN
+                    TimerRelax(IN := FALSE);             // Reset časovače
+                    TestState := STATE_IDLE;             // Návrat do Idle pro další cyklus
+                END_IF;
+        END_CASE;
+    END_IF;
+END_IF;
+END_PROGRAM
+

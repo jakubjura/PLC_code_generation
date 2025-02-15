@@ -1,0 +1,14 @@
+PROGRAM DebounceButton
+    VAR
+        Button : BOOL; (* Vstupní signál tlačítka *)
+        FilteredButton : BOOL; (* Výstupní signál po odstranění zákmitů *)
+        DebounceTimer : TON; (* Časovač pro eliminaci zákmitů *)
+    END_VAR
+
+    (* Nastavení časovače *)
+    DebounceTimer(IN := Button, PT := T#50ms);
+
+    (* Výstup je aktivován pouze pokud časovač doběhl *)
+    FilteredButton := DebounceTimer.Q;
+END_PROGRAM
+

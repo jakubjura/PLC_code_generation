@@ -1,0 +1,14 @@
+Write a program code in the ST language for a PLC according to the IEC/EN 61131 standard for a conveyor (Conveyor), where only one phase is active at a time:
+
+Pressing the Start button activates Loading.
+After 10 seconds, it switches to Transporting.
+After another 10 seconds, it switches to Unloading.
+When presence_sensor indicates completion, the sequence returns to Loading.
+Pressing the Stop button interrupts the sequence, and the conveyor stops.
+
+
+
+
+
+
+

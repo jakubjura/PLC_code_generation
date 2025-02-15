@@ -1,0 +1,1 @@
+Write a program code in the ST language for a PLC according to the IEC/EN 61131 standard, which will have three inputs (X1, X2, X3). The output Y will be active (TRUE) if at least two out of the three inputs have a value of TRUE.

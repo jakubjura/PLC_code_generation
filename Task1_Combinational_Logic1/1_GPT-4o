@@ -1,0 +1,13 @@
+PROGRAM MajorityLogic
+    VAR
+        X1 : BOOL; (* Vstup 1 *)
+        X2 : BOOL; (* Vstup 2 *)
+        X3 : BOOL; (* Vstup 3 *)
+        Y  : BOOL; (* Výstup *)
+    END_VAR
+
+    (* Logická podmínka pro aktivaci výstupu Y *)
+    Y := (X1 AND X2) OR (X1 AND X3) OR (X2 AND X3);
+
+END_PROGRAM
+

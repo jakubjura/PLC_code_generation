@@ -1,0 +1,43 @@
+PROGRAM DynamicMaterialTesting
+VAR
+    A0 : BOOL; // Initial Position Sensor
+    A1 : BOOL; // Failure Sensor
+    Motor_Control : BOOL; // Pneumotor Control
+    Cycle : INT; // Cycle Counter
+    Final_Cycle : INT; // Final Cycle Counter
+    Timer_Load : TON; // Load Timer
+    Timer_Release : TON; // Release Timer
+    Load_Active : BOOL; // Flag indicating if load is active
+    Release_Active : BOOL; // Flag indicating if release is active
+END_VAR
+
+// Initialize variables
+IF A1 THEN
+    Final_Cycle := Cycle; // Store the final cycle count on failure
+    Motor_Control := FALSE; // Stop the pneumotor
+    Load_Active := FALSE; // Reset load active flag
+    Release_Active := FALSE; // Reset release active flag
+ELSE
+    // Main program
+    IF NOT Load_Active AND NOT Release_Active THEN
+        Motor_Control := TRUE; // Activate pneumotor to apply load
+        Timer_Load(IN := TRUE, PT := T#350MS); // Start load timer
+        Load_Active := TRUE; // Set load active flag
+    END_IF
+
+    IF Load_Active AND Timer_Load.Q THEN
+        Motor_Control := FALSE; // Deactivate pneumotor after load duration
+        Timer_Release(IN := TRUE, PT := T#600MS); // Start release timer
+        Load_Active := FALSE; // Reset load active flag
+        Release_Active := TRUE; // Set release active flag
+    END_IF
+
+    IF Release_Active AND Timer_Release.Q THEN
+        IF A0 THEN
+            Cycle := Cycle + 1; // Increment cycle counter if in initial position
+        END_IF
+        Release_Active := FALSE; // Reset release active flag
+    END_IF
+END_IF
+END_PROGRAM
+

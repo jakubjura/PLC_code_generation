@@ -1,0 +1,5 @@
+Write a program code in the ST language for a PLC according to the IEC/EN 61131 standard, which controls a conveyor according to the following rules:
+
+The conveyor starts if the StartButton is activated and the StopButton is not pressed.
+If the StopButton is activated, the conveyor stops.
+

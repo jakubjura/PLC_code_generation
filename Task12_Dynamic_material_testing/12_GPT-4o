@@ -1,0 +1,60 @@
+PROGRAM DynamicTestSystem
+VAR
+    StartTest : BOOL;
+    SensorBreakageDetected : BOOL;
+    ApplyForce : BOOL := FALSE;
+    ReleaseForce : BOOL := FALSE;
+    SaveCycleCount : BOOL := FALSE;
+    StopMotor : BOOL := FALSE;
+    CycleCount : INT := 0;
+    TimerLoad : TON := (IN := FALSE, PT := T#350ms);
+    TimerUnload : TON := (IN := FALSE, PT := T#600ms);
+    State : INT := 0;
+END_VAR
+
+// Main State Machine
+CASE State OF
+    0: // Idle State
+        IF StartTest THEN
+            ApplyForce := TRUE;
+            TimerLoad.IN := TRUE;
+            State := 1;
+        END_IF;
+    
+    1: // Load Cycle
+        TimerLoad.IN := TRUE;
+        IF TimerLoad.Q THEN
+            ApplyForce := FALSE;
+            ReleaseForce := TRUE;
+            TimerLoad.IN := FALSE;
+            TimerUnload.IN := TRUE;
+            State := 2;
+        END_IF;
+    
+    2: // Unload Cycle
+        TimerUnload.IN := TRUE;
+        IF TimerUnload.Q THEN
+            ReleaseForce := FALSE;
+            TimerUnload.IN := FALSE;
+            IF SensorBreakageDetected THEN
+                SaveCycleCount := TRUE;
+                StopMotor := TRUE;
+                State := 3;
+            ELSE
+                CycleCount := CycleCount + 1;
+                ApplyForce := TRUE;
+                TimerLoad.IN := TRUE;
+                State := 1;
+            END_IF;
+        END_IF;
+    
+    3: // Store Data and Stop
+        SaveCycleCount := TRUE;
+        StopMotor := TRUE;
+        TimerLoad.IN := FALSE;
+        TimerUnload.IN := FALSE;
+        ApplyForce := FALSE;
+        ReleaseForce := FALSE;
+END_CASE;
+END_PROGRAM
+

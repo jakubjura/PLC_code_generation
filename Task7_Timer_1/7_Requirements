@@ -1,0 +1,11 @@
+Write a program code in the ST language for a PLC according to the IEC/EN 61131 standard, which keeps the Fan output on for 10 seconds after the PowerButton is released.
+
+If PowerButton is TRUE, the Fan turns on immediately.
+If PowerButton changes to FALSE, the Fan remains on for 10 more seconds before turning off.
+
+
+
+
+
+
+

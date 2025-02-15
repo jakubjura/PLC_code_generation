@@ -1,0 +1,89 @@
+// Definice typu pro stavy cyklu
+TYPE ConveyorState : (Idle, LoadingState, TransportingState, UnloadingState);
+END_TYPE
+
+PROGRAM ConveyorControl
+VAR
+    // Vstupy
+    Start           : BOOL;    // Tlačítko Start
+    Stop            : BOOL;    // Tlačítko Stop
+    presence_sensor : BOOL;    // Snímač indikující dokončení vykládání
+
+    // Výstupy
+    Loading         : BOOL := FALSE;   // Indikuje aktivní fázi nakládání
+    Transporting    : BOOL := FALSE;   // Indikuje aktivní fázi přepravy
+    Unloading       : BOOL := FALSE;   // Indikuje aktivní fázi vykládání
+
+    // Řídící proměnná – stavový automat
+    currentState    : ConveyorState := Idle;   // Počáteční stav
+
+    // Časovače pro jednotlivé fáze
+    TimerLoading      : TON;   // Časovač pro fázi Loading (10 sekund)
+    TimerTransporting : TON;   // Časovač pro fázi Transporting (10 sekund)
+END_VAR
+
+// Hlavní cyklus programu
+CASE currentState OF
+
+    Idle:
+        // V Idle stavu nejsou aktivní žádné výstupy
+        Loading      := FALSE;
+        Transporting := FALSE;
+        Unloading    := FALSE;
+        // Ujistíme se, že časovače jsou resetovány
+        TimerLoading(IN := FALSE, PT := T#10s); 
+        TimerTransporting(IN := FALSE, PT := T#10s);
+        // Po stisknutí tlačítka Start přejdeme do fáze Loading
+        IF Start THEN
+            currentState := LoadingState;
+        END_IF;
+
+    LoadingState:
+        // Aktivujeme výstup pro nakládání
+        Loading      := TRUE;
+        Transporting := FALSE;
+        Unloading    := FALSE;
+        // Spustíme časovač pro fázi Loading
+        TimerLoading(IN := TRUE, PT := T#10s);
+        // Pokud je stisknuto tlačítko Stop, vracíme se do Idle a resetujeme časovač
+        IF Stop THEN
+            currentState := Idle;
+            TimerLoading(IN := FALSE);
+        // Po uplynutí 10 sekund přejdeme do fáze Transporting
+        ELSIF TimerLoading.Q THEN
+            currentState := TransportingState;
+            TimerLoading(IN := FALSE); // Reset časovače Loading
+        END_IF;
+
+    TransportingState:
+        // Aktivujeme výstup pro přepravu
+        Loading      := FALSE;
+        Transporting := TRUE;
+        Unloading    := FALSE;
+        // Spustíme časovač pro fázi Transporting
+        TimerTransporting(IN := TRUE, PT := T#10s);
+        IF Stop THEN
+            currentState := Idle;
+            TimerTransporting(IN := FALSE);
+        // Po uplynutí 10 sekund přejdeme do fáze Unloading
+        ELSIF TimerTransporting.Q THEN
+            currentState := UnloadingState;
+            TimerTransporting(IN := FALSE); // Reset časovače Transporting
+        END_IF;
+
+    UnloadingState:
+        // Aktivujeme výstup pro vykládání
+        Loading      := FALSE;
+        Transporting := FALSE;
+        Unloading    := TRUE;
+        // V této fázi se již časovače nepoužívají; čekáme na indikaci dokončení vykládání
+        IF Stop THEN
+            currentState := Idle;
+        ELSIF presence_sensor THEN
+            // Po dokončení vykládání se cyklus vrací do fáze Loading
+            currentState := LoadingState;
+        END_IF;
+
+END_CASE;
+END_PROGRAM
+

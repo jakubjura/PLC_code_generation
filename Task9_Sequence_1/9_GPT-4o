@@ -1,0 +1,55 @@
+PROGRAM ConveyorControl
+    VAR
+        start_button     : BOOL;    // Tlačítko Start
+        stop_button      : BOOL;    // Tlačítko Stop
+        presence_sensor  : BOOL;    // Senzor přítomnosti nákladu
+
+        timer_loading    : TON;     // Časovač pro fázi Loading
+        timer_transport  : TON;     // Časovač pro fázi Transporting
+
+        state            : INT := 0; // Stavový automat: 0=Idle, 1=Loading, 2=Transporting, 3=Unloading
+    END_VAR
+
+    // Zastavení dopravníku při stisknutí Stop
+    IF stop_button THEN
+        state := 0;  // Přechod do výchozího stavu (Idle)
+        timer_loading.IN := FALSE;  // Vypnutí časovačů
+        timer_transport.IN := FALSE;
+    END_IF;
+
+    // Stavový automat dopravníku
+    CASE state OF
+        0: // Idle - čeká na stisknutí Start
+            IF start_button THEN
+                state := 1;  // Přechod na Loading
+                timer_loading.IN := TRUE; // Spuštění časovače pro Loading
+            END_IF;
+
+        1: // Loading (Nakládání)
+            timer_loading.PT := T#10S; // Nastavení času na 10 sekund
+            IF timer_loading.Q THEN
+                state := 2;  // Přechod na Transporting
+                timer_loading.IN := FALSE; // Reset časovače Loading
+                timer_transport.IN := TRUE; // Spuštění časovače pro přepravu
+            END_IF;
+
+        2: // Transporting (Přeprava)
+            timer_transport.PT := T#10S; // Nastavení času na 10 sekund
+            IF timer_transport.Q THEN
+                state := 3;  // Přechod na Unloading
+                timer_transport.IN := FALSE; // Reset časovače Transporting
+            END_IF;
+
+        3: // Unloading (Vykládání)
+            IF presence_sensor THEN
+                state := 1; // Náklad vyložen, přechod zpět na Loading
+                timer_loading.IN := TRUE;
+            END_IF;
+    END_CASE;
+
+    // Volání funkčních bloků časovačů
+    timer_loading();
+    timer_transport();
+
+END_PROGRAM
+

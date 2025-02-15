@@ -1,0 +1,78 @@
+PROGRAM MaterialTest
+VAR
+    // Stavový automat: 0 = Idle, 1 = Loading, 2 = Unloading, 3 = BreakageDetected
+    state : INT := 0;
+    Cycle : INT := 0;
+    Final_cycle : INT := 0;
+    TestActive : BOOL := TRUE;
+    
+    // Vstupní signály: A0 - iniciační snímač, A1 - koncový snímač (porušení)
+    A0 : BOOL;
+    A1 : BOOL;
+    
+    // Vstupní signál pro reset testu (např. tlačítko)
+    Reset : BOOL;
+    
+    // Výstupní signál: ValveCmd řídí ventil (TRUE = aktivní)
+    ValveCmd : BOOL := FALSE;
+    
+    // Časovače: TimerLoad (350 ms) a TimerUnload (600 ms)
+    TimerLoad : TON;
+    TimerUnload : TON;
+END_VAR
+
+// Resetovací logika - vždy kontrolována, nezávisle na TestActive
+IF Reset THEN
+    Cycle := 0;         // Reset počítadla cyklů
+    Final_cycle := 0;   // Reset paměti výsledného počtu cyklů
+    TestActive := TRUE; // Obnovení testovacího režimu
+    state := 0;         // Návrat do stavu Idle
+END_IF;
+
+// Hlavní cyklus programu - vyhodnocuje stavový automat testu
+IF TestActive THEN
+    // Pokud je aktivní snímač A1, došlo k porušení součásti
+    IF A1 THEN
+        Final_cycle := Cycle;  // Uložení počtu cyklů
+        TestActive := FALSE;   // Zastavení automatického testování
+        state := 3;            // Nastavení stavu na BreakageDetected
+        ValveCmd := FALSE;     // Vypnutí ventilu
+        // Reset časovačů
+        TimerLoad(IN := FALSE);
+        TimerUnload(IN := FALSE);
+    ELSE
+        CASE state OF
+            0:  // Idle: čekáme na dosažení iniciační polohy (A0)
+                IF A0 THEN
+                    state := 1;           // Přechod do stavu Loading
+                    ValveCmd := TRUE;     // Aktivace ventilu, spuštění motoru
+                    TimerLoad(IN := TRUE, PT := T#350ms);
+                END_IF;
+            1:  // Loading: motor působí na součástku po dobu 350 ms
+                TimerLoad(IN := TRUE, PT := T#350ms);
+                IF TimerLoad.Q THEN
+                    ValveCmd := FALSE;     // Vypnutí ventilu po 350 ms
+                    TimerLoad(IN := FALSE); // Reset časovače TimerLoad
+                    state := 2;            // Přechod do stavu Unloading
+                    TimerUnload(IN := TRUE, PT := T#600ms);
+                END_IF;
+            2:  // Unloading: odlehčení (600 ms) a návrat do polohy A0
+                TimerUnload(IN := TRUE, PT := T#600ms);
+                IF TimerUnload.Q THEN
+                    TimerUnload(IN := FALSE); // Reset časovače TimerUnload
+                    IF A0 THEN
+                        Cycle := Cycle + 1;    // Zvýšení počtu dokončených cyklů
+                        state := 0;            // Návrat do stavu Idle
+                    END_IF;
+                END_IF;
+            3:  // BreakageDetected: test ukončen, součástka porušena
+                ValveCmd := FALSE;  // Zajištění vypnutí ventilu
+                // V tomto stavu čekáme na aktivaci Reset, reset je zpracován výše
+            ELSE
+                // Neplatný stav, resetujeme do Idle
+                state := 0;
+        END_CASE;
+    END_IF;
+END_IF;
+END_PROGRAM
+

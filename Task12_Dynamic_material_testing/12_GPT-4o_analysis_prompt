@@ -1,0 +1,35 @@
+PROGRAM DynamicMaterialTest
+VAR
+    A0 : BOOL; // Snímač iniciální polohy
+    A1 : BOOL; // Snímač porušení součásti
+    Ventil : BOOL; // Elektropneumatický ventil
+    Cycle : INT; // Počet cyklů
+    Final_cycle : INT; // Uložený počet cyklů při porušení
+    TimerTest : TON; // Časovač pro 350 ms zatížení
+    TimerRelax : TON; // Časovač pro 600 ms odlehčení
+    TestActive : BOOL; // Indikátor testovacího cyklu
+END_VAR
+
+// Inicializace
+IF NOT A1 THEN
+    IF A0 AND NOT TestActive THEN
+        Ventil := TRUE;
+        TimerTest(IN := TRUE, PT := T#350MS);
+        TestActive := TRUE;
+    END_IF;
+
+    IF TimerTest.Q THEN
+        Ventil := FALSE;
+        TimerRelax(IN := TRUE, PT := T#600MS);
+    END_IF;
+
+    IF TimerRelax.Q THEN
+        TestActive := FALSE;
+        Cycle := Cycle + 1;
+    END_IF;
+ELSE
+    Final_cycle := Cycle;
+    Ventil := FALSE;
+END_IF;
+END_PROGRAM
+

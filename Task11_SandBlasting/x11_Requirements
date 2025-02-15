@@ -1,0 +1,18 @@
+(Railway Crossing Signaling System)
+Write a program code in the ST language for a PLC according to the IEC/EN 61131 standard to control the railway crossing light signaling according to the following requirements.
+
+The system has three states:
+
+STOP
+GO
+OUT OF SERVICE
+The state is controlled by the station signaling system (based on station signals) and does not have its own on/off elements. The station signaling system provides signals to the crossing controller:
+
+OPEN activates the GO state.
+STOP activates the STOP state.
+OFF activates the OUT OF SERVICE state.
+If no signals are received from the station signaling system, the controller enters the OUT OF SERVICE mode.
+Light Behavior:
+In the STOP mode, two red lights (R1 and R2) flash alternately at a 550 ms frequency.
+In the GO mode, the white light (W) flashes at an 850 ms frequency with a 70% duty cycle.
+In the OUT OF SERVICE mode, no lights are illuminated.

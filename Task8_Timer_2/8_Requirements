@@ -1,0 +1,11 @@
+Write a program code in the ST language for a PLC according to the IEC/EN 61131 standard, which eliminates bouncing when pressing the Button:
+
+The button may momentarily switch between TRUE and FALSE due to mechanical bouncing.
+The output signal FilteredButton changes to TRUE only if Button remains TRUE steadily for 50 ms.
+
+
+
+
+
+
+

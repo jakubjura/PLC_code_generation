@@ -1,0 +1,32 @@
+PROGRAM ProductCounter
+    VAR
+        Sensor        : BOOL;    (* Vstupní senzor detekující výrobek *)
+        ResetButton   : BOOL;    (* Tlačítko pro reset počítadla *)
+        Conveyor      : BOOL;    (* Výstup pro pohon dopravníku *)
+        ProductCount  : INT := 0; (* Počítadlo výrobků *)
+        TargetCount   : INT := 10; (* Požadovaný počet výrobků *)
+        PrevSensor    : BOOL := FALSE; (* Pomocná proměnná pro detekci náběžné hrany *)
+    END_VAR
+
+    (* Detekce náběžné hrany senzoru *)
+    IF (Sensor = TRUE) AND (PrevSensor = FALSE) THEN
+        ProductCount := ProductCount + 1; (* Inkrementace počítadla *)
+    END_IF
+    PrevSensor := Sensor; (* Uložení předchozí hodnoty senzoru *)
+
+    (* Zastavení linky při dosažení požadovaného počtu *)
+    IF ProductCount >= TargetCount THEN
+        Conveyor := FALSE; (* Zastavení linky *)
+    ELSE
+        Conveyor := TRUE; (* Linka běží *)
+    END_IF
+
+    (* Reset počítadla při stisknutí resetovacího tlačítka *)
+    IF ResetButton = TRUE THEN
+        ProductCount := 0; (* Vynulování čítače *)
+        Conveyor := TRUE;  (* Znovu spuštění linky *)
+    END_IF
+
+END_PROGRAM
+
+

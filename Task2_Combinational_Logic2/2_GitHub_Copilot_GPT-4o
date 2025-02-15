@@ -1,0 +1,11 @@
+PROGRAM Main
+VAR
+    A : BOOL;    // Vstup A
+    B : BOOL;    // Vstup B
+    Y : BOOL;    // Výstup Y
+END_VAR
+
+// Logika pro výstup Y
+Y := A XOR B;
+END_PROGRAM
+

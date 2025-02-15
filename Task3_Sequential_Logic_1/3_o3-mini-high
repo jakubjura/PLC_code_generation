@@ -1,0 +1,18 @@
+PROGRAM ConveyorControl
+VAR
+    StartButton : BOOL;    // Vstupní signál pro spuštění (tlačítko Start)
+    StopButton  : BOOL;    // Vstupní signál pro zastavení (tlačítko Stop)
+    Conveyor  : BOOL := FALSE;  // Řídicí výstup dopravníku (FALSE = zastaven, TRUE = spuštěn)
+END_VAR
+
+(* Řídící logika:
+   - Pokud je aktivní tlačítko StopButton, dopravník se zastaví.
+   - Pokud není aktivní tlačítko StopButton a je stisknuto tlačítko StartButton,
+     dopravník se spustí. *)
+IF StopButton THEN
+    Conveyor := FALSE;  // Zastavení dopravníku, pokud je stisknuto tlačítko Stop
+ELSIF StartButton THEN
+    Conveyor := TRUE;   // Spuštění dopravníku, pokud je stisknuto tlačítko Start
+END_IF;
+END_PROGRAM
+

@@ -1,0 +1,40 @@
+(* Program pro počítání výrobků a zastavení linky při dosažení cílového počtu. *)
+PROGRAM CountProducts
+VAR
+    Sensor       : BOOL;        (* Vstupní signál senzoru, kdy TRUE znamená detekci výrobku *)
+    ResetButton  : BOOL;        (* Vstupní signál tlačítka Reset *)
+    ProductCount : INT := 0;    (* Počítadlo výrobků *)
+    TargetCount  : INT := 10;   (* Nastavený cílový počet výrobků – dle potřeby upravte *)
+    StopLine     : BOOL;        (* Výstupní signál pro zastavení linky; TRUE = zastavit linku *)
+    
+    (* Instance funkčního bloku pro detekci náběžné hrany ze vstupu Sensor *)
+    SensorEdge : R_TRIG;
+END_VAR
+
+(* --- Zpracování vstupních signálů --- *)
+
+(* Detekce náběžné hrany senzoru:
+   Funkční blok R_TRIG vyhodnotí náběžnou hranu signálu Sensor.
+   Pokud je Q = TRUE, byl právě detekován přechod z FALSE na TRUE. *)
+SensorEdge(CLK := Sensor);
+IF SensorEdge.Q THEN
+    ProductCount := ProductCount + 1;
+END_IF;
+
+(* Kontrola, zda byl dosažen cílový počet výrobků.
+   Pokud je ProductCount >= TargetCount, nastaví se StopLine = TRUE, což zastaví linku. *)
+IF ProductCount >= TargetCount THEN
+    StopLine := TRUE;
+ELSE
+    StopLine := FALSE;
+END_IF;
+
+(* Reset čítače a spuštění linky po stisknutí tlačítka ResetButton.
+   Reset tlačítkem okamžitě vynuluje ProductCount a opět nastaví StopLine = FALSE. *)
+IF ResetButton THEN
+    ProductCount := 0;
+    StopLine := FALSE;
+END_IF;
+
+END_PROGRAM
+

@@ -1,0 +1,42 @@
+(* Program pro ovládání lineárního pneumotoru pomocí tlačítka *)
+PROGRAM MotorControl
+VAR
+    (* Vstupy *)
+    Motor_A_Button : BOOL;    (* Tlačítko pro ovládání motoru *)
+    Sensor_A0      : BOOL;    (* Senzor indikující iniciální (retracted) polohu motoru *)
+    Sensor_A1      : BOOL;    (* Senzor indikující vysunutou (extended) polohu motoru *)
+
+    (* Výstupy *)
+    MotorExtend    : BOOL;    (* Signál pro vysunutí motoru *)
+    MotorRetract   : BOOL;    (* Signál pro navrácení motoru do iniciální polohy *)
+
+    (* Pomocná proměnná pro detekci náběžné hrany tlačítka *)
+    R_Trig_Button  : R_TRIG;  (* Funkční blok pro detekci náběžné hrany *)
+END_VAR
+
+(* Detekce náběžné hrany stisku tlačítka *)
+R_Trig_Button(CLK := Motor_A_Button);
+
+(* Řízení motoru podle aktuální polohy a stisknutí tlačítka *)
+IF R_Trig_Button.Q THEN
+    IF Sensor_A0 THEN
+        (* Pokud je motor v iniciální poloze, vysuň motor *)
+        MotorExtend  := TRUE;
+        MotorRetract := FALSE;
+    ELSIF Sensor_A1 THEN
+        (* Pokud je motor ve vysunuté poloze, vrať motor do iniciální polohy *)
+        MotorExtend  := FALSE;
+        MotorRetract := TRUE;
+    END_IF;
+END_IF;
+
+(* Resetování výstupů po dosažení cílové polohy *)
+IF Sensor_A1 THEN
+    MotorExtend := FALSE;    (* Po vysunutí: reset vysunutí *)
+END_IF;
+
+IF Sensor_A0 THEN
+    MotorRetract := FALSE;   (* Po navrácení: reset navrácení *)
+END_IF;
+END_PROGRAM
+

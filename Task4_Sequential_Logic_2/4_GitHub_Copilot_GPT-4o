@@ -1,0 +1,39 @@
+PROGRAM LinearPneumotorControl
+VAR
+    Motor_A_Button : BOOL;   // Tlačítko pro ovládání motoru
+    Sensor_A0 : BOOL;        // Senzor pro iniciální polohu motoru
+    Sensor_A1 : BOOL;        // Senzor pro vysunutou polohu motoru
+    Motor_Output : BOOL;     // Výstup pro ovládání motoru (ventil)
+    State : BOOL;            // Stav motoru (FALSE = iniciální, TRUE = vysunutý)
+    Button_Pressed : BOOL;   // Pomocná proměnná pro detekci stisknutí tlačítka
+END_VAR
+
+// Hlavní programová smyčka
+IF Motor_A_Button AND NOT Button_Pressed THEN
+    Button_Pressed := TRUE;
+
+    // Pokud je motor v iniciální poloze a tlačítko je stisknuté
+    IF Sensor_A0 THEN
+        Motor_Output := TRUE;  // Aktivuj motor (ventil) pro vysunutí
+        State := TRUE;         // Nastav stav motoru na vysunutý
+    // Pokud je motor ve vysunuté poloze a tlačítko je stisknuté
+    ELSIF Sensor_A1 THEN
+        Motor_Output := FALSE; // Deaktivuj motor (ventil) pro návrat do iniciální polohy
+        State := FALSE;        // Nastav stav motoru na iniciální
+    END_IF
+END_IF
+
+// Reset pomocné proměnné po uvolnění tlačítka
+IF NOT Motor_A_Button THEN
+    Button_Pressed := FALSE;
+END_IF
+
+// Aktualizace výstupu motoru podle aktuálního stavu
+IF State THEN
+    Motor_Output := TRUE;  // Motor je vysunutý
+ELSE
+    Motor_Output := FALSE; // Motor je v iniciální poloze
+END_IF
+
+END_PROGRAM
+

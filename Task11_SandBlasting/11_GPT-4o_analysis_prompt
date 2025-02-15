@@ -1,0 +1,56 @@
+PROGRAM Piskovani
+VAR
+    START_BUTTON: BOOL; // Tlačítko START
+    A_UP, A_DOWN, C_LEFT, C_RIGHT: BOOL; // Koncové spínače pneumotorů
+    Pneumotor_A, Pneumotor_B, Pneumotor_C: BOOL; // Ovládání pneumotorů
+    Timer_Ta: TON; // Časovač pro dobu opískování
+    Ta_Set: TIME; // Nastavitelná doba opískování z operátorského rozhraní
+    State: INT; // Stavový automat
+END_VAR
+
+// Hlavní stavový automat
+CASE State OF
+    0: // Čekání na start
+        IF START_BUTTON THEN
+            State := 1;
+        END_IF;
+    1: // Upnutí obrobku
+        Pneumotor_A := TRUE;
+        IF A_UP THEN
+            State := 2;
+        END_IF;
+    2: // Opískování první strany
+        Pneumotor_B := TRUE;
+        Timer_Ta(IN := TRUE, PT := Ta_Set);
+        IF Timer_Ta.Q THEN
+            Pneumotor_B := FALSE; // Vypnutí trysky po dokončení opískování
+            State := 3;
+            Timer_Ta(IN := FALSE);
+        END_IF;
+    3: // Přesun trysky
+        Pneumotor_B := FALSE; // Vypnutí trysky během přesunu
+        Pneumotor_C := TRUE;
+        IF C_RIGHT THEN
+            State := 4;
+        END_IF;
+    4: // Opískování druhé strany
+        Pneumotor_B := TRUE;
+        Timer_Ta(IN := TRUE, PT := Ta_Set);
+        IF Timer_Ta.Q THEN
+            Pneumotor_B := FALSE; // Vypnutí trysky po dokončení druhého opískování
+            State := 5;
+            Timer_Ta(IN := FALSE);
+        END_IF;
+    5: // Návrat trysky
+        Pneumotor_C := FALSE;
+        IF C_LEFT THEN
+            State := 6;
+        END_IF;
+    6: // Uvolnění obrobku
+        Pneumotor_A := FALSE;
+        IF A_DOWN THEN
+            State := 0;
+        END_IF;
+END_CASE;
+END_PROGRAM
+

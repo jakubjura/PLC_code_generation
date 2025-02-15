@@ -1,0 +1,115 @@
+PROGRAM ShotPeeningProcess
+VAR
+    state         : INT := 0;           // Aktuální stav
+    prevState     : INT := -1;          // Pro detekci změny stavu
+
+    I_Start       : BOOL;               // Tlačítko START
+    I_A_Clamped   : BOOL;               // Snímač potvrzující upnutí obrobku (pneumotor A)
+    I_A_Unclamped : BOOL;               // Snímač potvrzující uvolnění obrobku (pneumotor A)
+    I_C_Pos2      : BOOL;               // Snímač polohy – pneumotor C u druhého ramene
+    I_C_Home      : BOOL;               // Snímač výchozí polohy – pneumotor C
+    Ta            : TIME;               // Doba opískování (nastavitelná z PC)
+
+    Q_A_Clamp      : BOOL;              // Příkaz pneumotoru A – upnutí obrobku
+    Q_A_Release    : BOOL;              // Příkaz pneumotoru A – uvolnění obrobku
+    Q_B_Open       : BOOL;              // Příkaz pneumotoru B – otevření ventilu pískovací trysky
+    Q_B_Close      : BOOL;              // Příkaz pneumotoru B – zavření ventilu pískovací trysky
+    Q_C_MoveToArm2 : BOOL;              // Příkaz pneumotoru C – přesun trysky ke druhému ramenu
+    Q_C_MoveHome   : BOOL;              // Příkaz pneumotoru C – návrat trysky do výchozí polohy
+
+    timerShot    : TON;                 // Funkční blok časovače
+END_VAR
+
+// Konstanty stavů
+CONST
+    STATE_IDLE         : INT := 0;
+    STATE_CLAMPING     : INT := 1;
+    STATE_SHOTPEENING1 : INT := 2;
+    STATE_MOVETOARM2   : INT := 3;
+    STATE_SHOTPEENING2 : INT := 4;
+    STATE_RETURNHOME   : INT := 5;
+    STATE_UNCLAMPING   : INT := 6;
+END_CONST
+
+// Nastavení výstupů do výchozího stavu
+Q_A_Clamp      := FALSE;
+Q_A_Release    := FALSE;
+Q_B_Open       := FALSE;
+Q_B_Close      := TRUE;      // Výchozí stav: ventil zavřen
+Q_C_MoveToArm2 := FALSE;
+Q_C_MoveHome   := FALSE;
+
+// Detekce změny stavu; při vstupu do opískovacích stavů resetujeme časovač
+IF state <> prevState THEN
+    IF (state = STATE_SHOTPEENING1) OR (state = STATE_SHOTPEENING2) THEN
+        timerShot(IN := FALSE);   // Reset časovače při vstupu do stavu opískování
+    END_IF;
+    prevState := state;
+END_IF;
+
+// Řídící logika stavového automatu
+CASE state OF
+
+    STATE_IDLE:
+        // Čekáme na stisk tlačítka START
+        IF I_Start THEN
+            state := STATE_CLAMPING;
+        END_IF;
+
+    STATE_CLAMPING:
+        // Aktivujeme pneumotor A pro upnutí obrobku
+        Q_A_Clamp := TRUE;
+        IF I_A_Clamped THEN
+            state := STATE_SHOTPEENING1;
+            timerShot(IN := TRUE, PT := Ta);   // Spuštění časovače pro první opískování
+        END_IF;
+
+    STATE_SHOTPEENING1:
+        // Otevření ventilu pískovací trysky
+        Q_B_Open := TRUE;
+        Q_B_Close := FALSE;  // Zajištění, že zavírací signál je deaktivován
+        timerShot(IN := TRUE, PT := Ta);
+        IF timerShot.Q THEN
+            Q_B_Open := FALSE;  // Ukončení otevření ventilu
+            Q_B_Close := TRUE;  // Aktivace zavíracího signálu pro uzavření ventilu
+            state := STATE_MOVETOARM2;
+        END_IF;
+
+    STATE_MOVETOARM2:
+        // Přesun trysky pneumotorem C ke druhému ramenu
+        Q_C_MoveToArm2 := TRUE;
+        IF I_C_Pos2 THEN
+            state := STATE_SHOTPEENING2;
+            timerShot(IN := TRUE, PT := Ta);   // Restart časovače pro druhé opískování
+        END_IF;
+
+    STATE_SHOTPEENING2:
+        // Opětovné otevření ventilu pískovací trysky
+        Q_B_Open := TRUE;
+        Q_B_Close := FALSE;  // Zajištění, že zavírací signál je deaktivován
+        timerShot(IN := TRUE, PT := Ta);
+        IF timerShot.Q THEN
+            Q_B_Open := FALSE;  // Ukončení otevření ventilu
+            Q_B_Close := TRUE;  // Aktivace zavíracího signálu pro uzavření ventilu
+            state := STATE_RETURNHOME;
+        END_IF;
+
+    STATE_RETURNHOME:
+        // Návrat trysky pneumotorem C do výchozí polohy
+        Q_C_MoveHome := TRUE;
+        IF I_C_Home THEN
+            state := STATE_UNCLAMPING;
+        END_IF;
+
+    STATE_UNCLAMPING:
+        // Uvolnění obrobku pneumotorem A
+        Q_A_Release := TRUE;
+        IF I_A_Unclamped THEN
+            state := STATE_IDLE;
+        END_IF;
+
+    ELSE
+        state := STATE_IDLE;   // Nouzový návrat do výchozího stavu
+END_CASE;
+END_PROGRAM
+

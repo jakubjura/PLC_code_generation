@@ -1,0 +1,54 @@
+// Deklarace proměnných
+VAR
+    OPEN : BOOL;           // Signál pro aktivaci stavu volno
+    STOP : BOOL;           // Signál pro aktivaci stavu stůj
+    OFF : BOOL;            // Signál pro aktivaci stavu mimo provoz
+    R1 : BOOL;             // Červené světlo 1
+    R2 : BOOL;             // Červené světlo 2
+    W : BOOL;              // Bílé světlo
+    TimerR : TON;          // Časovač pro červená světla
+    TimerW : TON;          // Časovač pro bílé světlo
+    State : INT;           // Stav systému
+    BlinkPhase : BOOL;     // Fáze blikání (pro střídání červených světel)
+END_VAR
+
+// Hlavní program
+IF OFF THEN
+    State := 3;            // Mimo provoz
+ELSIF STOP THEN
+    State := 1;            // Stůj
+ELSIF OPEN THEN
+    State := 2;            // Volno
+ELSE
+    State := 3;            // Mimo provoz v případě absence signálů
+END_IF
+
+CASE State OF
+    1: // Stůj
+        TimerR(IN := TRUE, PT := T#550ms);
+        IF TimerR.Q THEN
+            TimerR(IN := FALSE);
+            TimerR(IN := TRUE);
+            BlinkPhase := NOT BlinkPhase;  // Změna fáze blikání
+        END_IF
+        R1 := BlinkPhase;
+        R2 := NOT BlinkPhase;
+        W := FALSE;
+        
+    2: // Volno
+        TimerW(IN := TRUE, PT := T#850ms);
+        IF TimerW.Q THEN
+            TimerW(IN := FALSE);
+            TimerW(IN := TRUE);
+        END_IF
+        W := TimerW.ET < T#595ms; // 70 % z 850 ms je 595 ms
+        R1 := FALSE;
+        R2 := FALSE;
+        
+    3: // Mimo provoz
+        R1 := FALSE;
+        R2 := FALSE;
+        W := FALSE;
+END_CASE;
+END_PROGRAM
+

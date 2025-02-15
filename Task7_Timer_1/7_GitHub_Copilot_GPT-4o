@@ -1,0 +1,22 @@
+PROGRAM FanControl
+VAR
+    PowerButton     : BOOL;   (* Vstupní proměnná - tlačítko *)
+    Fan             : BOOL;   (* Výstupní proměnná - ventilátor *)
+    Timer           : TP;     (* Časovač typu TP pro prodloužené zapnutí *)
+    PrevPowerButton : BOOL := FALSE;  (* Pomocná proměnná pro detekci sestupné hrany *)
+    EdgeDetect      : BOOL;   (* Detekce sestupné hrany *)
+END_VAR
+
+(* Detekce sestupné hrany PowerButton *)
+EdgeDetect := PrevPowerButton AND NOT PowerButton;
+
+(* Spuštění časovače pouze při sestupné hraně *)
+Timer(IN := EdgeDetect, PT := T#10S);
+
+(* Logika řízení ventilátoru *)
+Fan := PowerButton OR Timer.Q;
+
+(* Uložení předchozího stavu tlačítka pro detekci hrany v dalším cyklu *)
+PrevPowerButton := PowerButton;
+END_PROGRAM
+

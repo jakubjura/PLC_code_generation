@@ -1,0 +1,4 @@
+Write a program code in the ST language for a PLC according to the IEC/EN 61131 standard, which counts the number of products (ProductCount) passing through a sensor (Sensor).
+
+When the set count (TargetCount) is reached, the production line stops.
+Pressing the ResetButton resets the counter, allowing the line to restart.

@@ -1,0 +1,15 @@
+PROGRAM ConveyorControl
+    VAR
+        StartButton : BOOL;  (* Tlačítko Start *)
+        StopButton  : BOOL;  (* Tlačítko Stop *)
+        ConveyorRunning : BOOL := FALSE;  (* Stav dopravníku *)
+    END_VAR
+
+    (* Logika pro řízení dopravníku *)
+    IF StartButton AND NOT StopButton THEN
+        ConveyorRunning := TRUE;  (* Spustí dopravník *)
+    ELSIF StopButton THEN
+        ConveyorRunning := FALSE; (* Zastaví dopravník *)
+    END_IF;
+END_PROGRAM
+

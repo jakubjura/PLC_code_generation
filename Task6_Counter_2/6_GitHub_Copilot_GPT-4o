@@ -1,0 +1,39 @@
+VAR
+	EntrySensor : BOOL; // Senzor detekující vstup výrobku na dopravník
+	ExitSensor : BOOL; // Senzor detekující odchod výrobku z dopravníku
+	ProductCount : INT := 0; // Počet výrobků na dopravníku
+	ConveyorFull : BOOL := FALSE; // Indikátor plného dopravníku
+END_VAR
+
+VAR
+	entrySensorPrevState : BOOL := FALSE; // Předchozí stav EntrySensor
+	exitSensorPrevState : BOOL := FALSE; // Předchozí stav ExitSensor
+END_VAR
+
+// Hlavní program
+PROGRAM Main
+BEGIN
+	// Detekce nárůstu na EntrySensor
+	IF EntrySensor AND NOT entrySensorPrevState THEN
+    	ProductCount := ProductCount + 1;
+	END_IF
+
+	// Aktualizace předchozího stavu EntrySensor
+	entrySensorPrevState := EntrySensor;
+
+	// Detekce nárůstu na ExitSensor
+	IF ExitSensor AND NOT exitSensorPrevState THEN
+    	ProductCount := ProductCount - 1;
+	END_IF
+
+	// Aktualizace předchozího stavu ExitSensor
+	exitSensorPrevState := ExitSensor;
+
+	// Kontrola, zda je dopravník plný
+	IF ProductCount >= 50 THEN
+    	ConveyorFull := TRUE;
+	ELSE
+    	ConveyorFull := FALSE;
+	END_IF
+END_PROGRAM
+

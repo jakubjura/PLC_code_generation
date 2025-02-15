@@ -1,0 +1,12 @@
+PROGRAM Main
+    VAR
+        A : BOOL; (* Vstup A *)
+        B : BOOL; (* Vstup B *)
+        Y : BOOL; (* Výstup Y *)
+    END_VAR
+
+    (* XOR logická operace: TRUE pokud A a B nejsou stejné *)
+    Y := A XOR B;
+
+END_PROGRAM
+

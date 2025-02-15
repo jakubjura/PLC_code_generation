@@ -1,0 +1,36 @@
+PROGRAM ProductCounter
+VAR
+    ProductCount: INT := 0;      // Počet výrobků
+    TargetCount: INT := 100;     // Nastavený počet výrobků (cílový počet)
+    Sensor: BOOL := FALSE;       // Senzor pro detekci výrobků
+    LineRunning: BOOL := TRUE;   // Stav běhu linky
+    ResetButton: BOOL := FALSE;  // Tlačítko pro resetování čítače
+    SensorPrev: BOOL := FALSE;   // Předchozí stav senzoru
+END_VAR
+
+// Počítání výrobků
+IF Sensor AND NOT SensorPrev THEN
+    ProductCount := ProductCount + 1;
+END_IF
+
+// Aktualizace předchozího stavu senzoru
+SensorPrev := Sensor;
+
+// Kontrola dosažení cílového počtu
+IF ProductCount >= TargetCount THEN
+    LineRunning := FALSE;  // Zastavení linky
+ELSE
+    LineRunning := TRUE;   // Linka běží
+END_IF
+
+// Resetování čítače
+IF ResetButton THEN
+    ProductCount := 0;     // Vynulování čítače
+    LineRunning := TRUE;   // Znovu spuštění linky
+END_IF
+
+// Výstupy
+(* Zde by mohly být výstupy pro řízení linky, např. *)
+(* LineMotor := LineRunning; *)  // Řízení motoru linky
+END_PROGRAM
+

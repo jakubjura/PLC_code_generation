@@ -1,0 +1,41 @@
+PROGRAM Prejezd_Zabezpecovac
+    VAR
+        OPEN, STOP, OFF : BOOL;  // Signály ze staničního zabezpečovacího systému
+        R1, R2, W : BOOL;        // Výstupy pro světla
+        Stav : INT := 3;         // Stav systému: 1 - Stůj, 2 - Volno, 3 - Mimo provoz
+        Timer_R1 : TON;          // Časovač pro první červené světlo
+        Timer_R2 : TON;          // Časovač pro druhé červené světlo
+        Timer_W : TON;           // Časovač pro bílé světlo
+    END_VAR
+
+    // Priorita stavů pro bezpečnost: STOP > OPEN > OFF
+    IF STOP THEN
+        Stav := 1; // Režim stůj
+    ELSIF OPEN THEN
+        Stav := 2; // Režim volno
+    ELSIF OFF OR (NOT OPEN AND NOT STOP) THEN
+        Stav := 3; // Režim mimo provoz
+    END_IF;
+
+    // Ovládání světel
+    CASE Stav OF
+        1: // Stůj - červená světla blikají střídavě s periodou 550 ms
+            Timer_R1(IN := NOT Timer_R1.Q, PT := T#550ms);
+            Timer_R2(IN := NOT Timer_R2.Q AND NOT Timer_R1.Q, PT := T#550ms);
+            R1 := Timer_R1.Q;
+            R2 := Timer_R2.Q;
+            W := FALSE;
+
+        2: // Volno - bílé světlo bliká s periodou 850 ms a střídou 70 %
+            Timer_W(IN := NOT Timer_W.Q, PT := T#850ms);
+            W := Timer_W.ET < T#595ms; // 70 % z 850 ms je 595 ms
+            R1 := FALSE;
+            R2 := FALSE;
+
+        3: // Mimo provoz - všechna světla zhasnutá
+            R1 := FALSE;
+            R2 := FALSE;
+            W := FALSE;
+    END_CASE;
+END_PROGRAM
+
