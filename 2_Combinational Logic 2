@@ -1,0 +1,4 @@
+Write a program code in the ST language for a PLC according to the IEC/EN 61131 standard, which has two inputs A and B (of type BOOL) and generates an output Y according to the following rule:
+
+Y is TRUE if A and B are not the same.
+Y is FALSE if A and B are the same.
